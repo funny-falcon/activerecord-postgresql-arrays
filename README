@@ -1,0 +1,36 @@
+PostgresArrays
+==============
+
+This library adds ability to use PostgreSQL array types with ActiveRecord.
+
+    > User.find(:all, :conditions=>['arr @> ?', [1,2,3].pg])
+      SELECT * FROM "users" WHERE ('arr' @> E'{"1", "2", "3"}')
+    > User.find(:all, :conditions=>['arr @> ?', [1,2,3].pg(:integer)])
+      SELECT * FROM "users" WHERE (arr @> '{1,2,3}')
+    > User.find(:all, :conditions=>['arr @> ?', [1,2,3].pg(:float)])
+      SELECT * FROM "users" WHERE (arr @> '{1.0,2.0,3.0}')
+    > u = User.find(1)
+      SELECT * FROM "users" WHERE ("users"."id" = 1)
+      => #<User id: 1, ..., arr: [1,2]>
+    > u.arr = [3,4]
+    > u.save
+      UPDATE "users" SET "db_ar" = '{3.0,4.0}' WHERE "id" = 19
+    > User.find(:all, :conditions=>{:arr=>[3,4].pg})
+      SELECT * FROM "users" WHERE ("users"."arr" = E'{"3", "4"}')
+    > User.find(:all, :conditions=>{:arr=>[3,4].search_any(:float)})
+      SELECT * FROM "users" WHERE ("users"."arr" && '{3.0,4.0}')
+    > User.find(:all, :conditions=>{:arr=>[3,4].search_all(:integer)})
+      SELECT * FROM "users" WHERE ("users"."arr" @> '{3,4}')
+    > User.find(:all, :conditions=>{:arr=>[3,4].search_subarray(:safe)})
+      SELECT * FROM "users" WHERE ("users"."arr" <@ '{3,4}')
+      
+      class U < ActiveRecord::Migration
+        def self.up
+          add_column :users, :fl_ar, :float_array
+        end
+      end
+      
+Plugin developed and used with rails 2.3.5 at the moment.
+
+
+Copyright (c) 2010 Sokolov Yura aka funny_falcon, released under the MIT license
