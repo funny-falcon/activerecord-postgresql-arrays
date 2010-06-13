@@ -184,7 +184,15 @@ module ActiveRecord
         unless key==:primary_key
           base = NATIVE_DATABASE_TYPES[key].dup
           base[:name] = base[:name]+'[]'
-          NATIVE_DATABASE_TYPES[:"{key}_array"]= base
+          NATIVE_DATABASE_TYPES[:"#{key}_array"]= base
+          TableDefinition.class_eval <<-EOV
+            def #{key}_array(*args)                                             # def string_array(*args)
+              options = args.extract_options!                                   #   options = args.extract_options!
+              column_names = args                                               #   column_names = args
+                                                                                #
+              column_names.each { |name| column(name, '#{key}_array', options) }#   column_names.each { |name| column(name, 'string_array', options) }
+            end                                                                 # end
+          EOV
         end
       end
       
