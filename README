@@ -26,11 +26,14 @@ This library adds ability to use PostgreSQL array types with ActiveRecord.
       
       class U < ActiveRecord::Migration
         def self.up
+          create_table :users do |t|
+            t.integer_array :int_ar
+          end
           add_column :users, :fl_ar, :float_array
         end
       end
       
-Plugin developed and used with rails 2.3.5 at the moment.
+Plugin worked with rails 2.3.x. integer_array works in ActiveRecord 3 at the moment.
 
 
 Copyright (c) 2010 Sokolov Yura aka funny_falcon, released under the MIT license
