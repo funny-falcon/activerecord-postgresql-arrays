@@ -10,7 +10,7 @@ module ActiveRecord
         base_column= new(nil, nil, base_type, true)
         h[base_type] = h[base_column.type]= base_column
       }
-      attr_reader :base_type_column
+      attr_reader :base_column
     
       def initialize(name, default, sql_type = nil, null = true)
         if sql_type =~ /^(.+)\[\]$/
@@ -129,55 +129,95 @@ module ActiveRecord
     class PostgreSQLAdapter < AbstractAdapter
       def quote_with_postgresql_arrays(value, column = nil)
         if Array === value && column && "#{column.type}" =~ /^(.+)_array$/
-          quote_array_by_base_type(value, $1)
+          quote_array_by_base_type(value, $1, column)
         else
-          quote_without_postgresql_arrays(value, column = nil)
+          quote_without_postgresql_arrays(value, column)
         end
       end
       alias_method_chain :quote, :postgresql_arrays
       
       def quote_array_by_base_type(value, base_type, column = nil)
         case base_type.to_sym
-          when :integer        then quote_pg_integer_array(value)
-          when :float          then quote_pg_float_array(value)
-          when :string, :text, :other then quote_pg_text_array(value)
-          when :decimal, :boolean, :date, :safe then quote_pg_string_safe_array(value)
-          else quote_pg_string_array(value, base_type, column)
+        when :integer, :float, :decimal, :boolean, :date, :safe,
+             :string, :text, :other
+          quote_array_for_arel_by_base_type( value, base_type )
+        else
+          quote_pg_string_array(value, base_type, column)
         end
       end
       
-      def quote_pg_integer_array(value)
-        "'{#{ value.map{|v| v.nil? ? 'NULL' : v.to_i}.join(',')}}'"
-      end
-      
-      def quote_pg_float_array(value)
-        "'{#{ value.map{|v| v.nil? ? 'NULL' : v.to_f}.join(',')}}'"
-      end
-      
-      def quote_pg_string_safe_array(value)
-        "'{#{ value.map{|v| v.nil? ? 'NULL' : v.to_s}.join(',')}}'"
-      end
-      
       def quote_pg_string_array(value, base_type, column=nil)
-        base_type_column= if column
-                            column.base_type_column
-                          else
-                            PostgreSQLColumn::BASE_TYPE_COLUMNS[base_type.to_sym]
-                          end
+        base_column= if column
+                       column.base_column
+                     else
+                       PostgreSQLColumn::BASE_TYPE_COLUMNS[base_type.to_sym]
+                     end
         value = value.map do|v| 
-            v = quote_without_postgresql_arrays(v, base_type_column)
+            v = quote_without_postgresql_arrays(v, base_column)
             if v=~/^E?'(.+)'$/ then v = $1 end
             "\"#{v.gsub('"','\"')}\""
         end
         "'{#{ value.join(',')}}'"
       end
+
+      module Prepare
+        def quote_array_for_arel_by_base_type( value, base_type )
+          case base_type.to_sym
+            when :integer, :float, :decimal, :boolean, :date, :safe
+              "'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
+            when :string, :text, :other
+              pa = prepare_array_for_arel_by_base_type(value, base_type)
+              "E'#{ quote_string( pa ) }'"
+            else
+              raise "Unsupported array base type #{base_type} for arel 3"
+          end
+        end
       
-      def quote_pg_text_array(value)
-        value = value.map{|v|
-             v ? (v = quote_string(v.to_s); v.gsub!('"','\"'); v) : 'NULL'
-          }.inspect
-        value.tr!('[]','{}')
-        "E'#{value}'"
+        def prepare_array_for_arel_by_base_type(value, base_type)
+          case base_type.to_sym
+            when :integer
+              prepare_pg_integer_array(value)
+            when :float
+              prepare_pg_float_array(value)
+            when :string, :text, :other
+              prepare_pg_text_array(value)
+            when :decimal, :boolean, :date, :safe
+              prepare_pg_string_safe_array(value)
+            else
+              raise "Unsupported array base type #{base_type} for arel 3"
+          end
+        end
+      
+        def prepare_pg_integer_array(value)
+          "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_i}.join(',')}}"
+        end
+        
+        def prepare_pg_float_array(value)
+          "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_f}.join(',')}}"
+        end
+        
+        def prepare_pg_string_safe_array(value)
+          "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_s}.join(',')}}"
+        end
+      
+        def prepare_pg_text_array(value)
+          value = value.map{|v|
+               v ? v.to_s.gsub('\\','\\\\\\').gsub('"','\"') : 'NULL'
+            }.inspect
+          value.tr!('[]','{}')
+        end
+      end
+      include Prepare
+      
+      if defined? ::Arel
+          def prepare_for_arel( value, column )
+            return unless value
+            if Array === value && "#{column.type}" =~ /^(.+)_array$/
+              prepare_array_for_arel_by_base_type(value, $1)
+            else
+              super
+            end
+          end
       end
       
       NATIVE_DATABASE_TYPES.keys.each do |key|
@@ -207,85 +247,46 @@ module ActiveRecord
       alias_method_chain :type_to_sql, :postgresql_arrays
     end
   end
-  
-  class Base
-    class << self
-      def attribute_condition_with_postgresql_arrays(quoted_column_name, argument)
-        if ::PGArrays::PgArray === argument
-          case argument
-            when ::PGArrays::PgAny then      "#{quoted_column_name} && ?"
-            when ::PGArrays::PgAll then      "#{quoted_column_name} @> ?"
-            when ::PGArrays::PgIncludes then "#{quoted_column_name} <@ ?"
-            else "#{quoted_column_name} = ?"
+end
+
+if defined? ::Arel
+  module ActiveRecord
+    module ConnectionAdapters
+      class AbstractAdapter
+        def prepare_for_arel( value, column )
+          if value && ((value.acts_like?(:date) || value.acts_like?(:time)) || value.is_a?(Hash) || value.is_a?(Array))
+            value.to_yaml
+          else
+            value
           end
-        else
-          attribute_condition_without_postgresql_arrays(quoted_column_name, argument)
         end
       end
-      alias_method_chain :attribute_condition, :postgresql_arrays
-      
-      def quote_bound_value_with_postgresql_arrays(value)
-        if ::PGArrays::PgArray === value
-          connection.quote_array_by_base_type(value, value.base_type)
-        else
-          quote_bound_value_without_postgresql_arrays(value)
+    end
+    
+    class Base
+      private
+      # Returns a copy of the attributes hash where all the values have been safely quoted for use in
+      # an Arel insert/update method.
+      def arel_attributes_values(include_primary_key = true, include_readonly_attributes = true, attribute_names = @attributes.keys)
+        attrs = {}
+        attribute_names.each do |name|
+          if (column = column_for_attribute(name)) && (include_primary_key || !column.primary)
+
+            if include_readonly_attributes || (!include_readonly_attributes && !self.class.readonly_attributes.include?(name))
+              value = read_attribute(name)
+
+              if value && self.class.serialized_attributes.has_key?(name)
+                value = value.to_yaml
+              else
+                value = self.class.connection.prepare_for_arel(value, column)
+              end
+              attrs[self.class.arel_table[name]] = value
+            end
+          end
         end
-      end                                              
-      alias_method_chain :quote_bound_value, :postgresql_arrays
+        attrs
+      end    
     end
-  end
-end
-
-module PGArrays
-  class PgArray < Array
-    attr_reader :base_type
-    def initialize(array, type=nil)
-      super(array)
-      @base_type = type if type
-    end
-    def base_type
-      @base_type || :other
-    end
-  end
-  
-  class PgAny < PgArray
-    # this is for cancan
-    if defined? CanCan::Ability
-      def include?(v)
-        Array === v && !( v & self ).empty?
-      end
-    end
-  end
-  
-  class PgAll < PgArray
-    if defined? CanCan::Ability
-      def include?
-        Array === v && (self - v).empty?
-      end
-    end
-  end
-
-  class PgIncludes < PgArray
-    if defined? CanCan::Ability
-      def include?
-        Array === v && (v - self).empty?
-      end
-    end
-  end
-end
-  
-class Array
-  def pg(type=nil)
-    ::PGArrays::PgArray.new(self, type)
-  end
-  def search_any(type=nil)
-    ::PGArrays::PgAny.new(self, type)
-  end
-  def search_all(type=nil)
-    ::PGArrays::PgAll.new(self, type)
-  end
-  def search_subarray(type=nil)
-    ::PGArrays::PgIncludes.new(self, type)
   end
 end
 

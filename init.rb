@@ -1,2 +1,4 @@
 # Include hook code here
-require 'postgres_arrays'
+require 'pg_array_schema'
+require 'pg_array_querying'
+require 'pg_array_references_by'
