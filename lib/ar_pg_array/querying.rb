@@ -1,7 +1,7 @@
 module ActiveRecord
   class Base
     class << self
-      unless defined? ::Arel
+      if method_defined? :attribute_condition
         def attribute_condition_with_postgresql_arrays(quoted_column_name, argument)
           if ::PGArrays::PgArray === argument
             case argument
@@ -29,51 +29,17 @@ module ActiveRecord
   end
 end
 
-if defined? ::Arel
-  module Arel
-    module Attributes
-      class IntegerArray < Attribute
-        def type_cast(value)
-          i = Integer.allocate
-          return unless value && !value.is_a?(Array)
-          value.tr('{}','').split(',').map{|v| i.typecast(v)}
-        end
-      end
-    end
-  
-    module Sql
-      module Attributes
-        class << self
-          def for_with_postgresql_arrays(column)
-            if column.type.to_s =~ /^(.+)_array$/
-              ('Arel::Sql::Attributes::' + for_without_postgresql_arrays(column.base_column).name.split('::').last + 'Array').constantize
-            else
-              for_without_postgresql_arrays(column)
-            end
-          end
-          alias_method_chain :for, :postgresql_arrays
-        end
-        
-        class IntegerArray < Arel::Attributes::IntegerArray
-          include Attributes
-        end
-      end
-    end
-  end
-end
-
 module PGArrays
   class PgArray < Array
     attr_reader :base_type
+    
     def initialize(array, type=nil)
       super(array)
       @base_type = type if type
     end
+    
     def base_type
       @base_type || :other
-    end
-    def to_sql
-      ActiveRecord::Base.quote_bound_value(self)
     end
   end
   
@@ -100,94 +66,22 @@ module PGArrays
       end
     end
   end
-  
-  if defined? ::Arel
-    class PgArray
-      Adapter = ActiveRecord::ConnectionAdapters::PostgreSQLAdapter
-      def to_sql( formatter = nil )
-        formatter.engine.quote_array_for_arel_by_base_type(self, base_type)
-      end
-      
-      def to_a
-        self
-      end
-    end
-  end
-end
-
-if defined? Arel
-  module Arel
-    module Predicates
-      class ArrayAny < Binary
-        def eval(row)
-          !(operand1.eval(row) & operand2.eval(row)).empty?
-        end
-      
-        def predicate_sql
-          "&&"
-        end
-      end
-      
-      class ArrayAll < Binary
-        def eval(row)
-          (operand2.eval(row) - operand1.eval(row)).empty?
-        end
-        
-        def predicate_sql
-          "@>"
-        end
-      end
-      
-      class ArrayIncluded < Binary
-        def eval(row)
-          (operand1.eval(row) - operand2.eval(row)).empty?
-        end
-        
-        def predicate_sql
-          "<@"
-        end
-      end
-    end
-    
-    class Attribute
-      module Predications
-        def ar_any(other)
-          Predicates::ArrayAny.new(self, other)
-        end
-        def ar_all(other)
-          Predicates::ArrayAll.new(self, other)
-        end
-        def ar_included(other)
-          Predicates::ArrayIncluded.new(self, other)
-        end
-        
-        def in(other)
-          case other
-          when ::PGArrays::PgAny
-            ar_any(other)
-          when ::PGArrays::PgAll
-            ar_all(other)
-          when ::PGArrays::PgIncludes
-            ar_included(other)
-          else
-            Predicates::In.new(self, other)
-          end
-        end
-      end
-    end
-  end
 end
 
 class Array
+  
   def pg(type=nil)
     ::PGArrays::PgArray.new(self, type)
   end
+  
   def search_any(type=nil)
     ::PGArrays::PgAny.new(self, type)
   end
+  
   def search_all(type=nil)
     ::PGArrays::PgAll.new(self, type)
   end
+  
   def search_subarray(type=nil)
     ::PGArrays::PgIncludes.new(self, type)
   end

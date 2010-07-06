@@ -35,12 +35,14 @@ module ActiveRecord
       def type_cast(value)
         return nil if value.nil?
         case type
-          when :integer_array, :float_array then self.class.string_to_num_array(value)
+          when :integer_array, :float_array 
+            self.class.string_to_num_array(value)
           when :decimal_array, :date_array, :boolean_array
             safe_string_to_array(value)
           when :timestamp_array, :time_array, :datetime_array, :binary_array
             string_to_array(value)
-          when :text_array, :string_array then self.class.string_to_text_array(value)
+          when :text_array, :string_array
+            self.class.string_to_text_array(value)
           else super
         end
       end
@@ -121,7 +123,7 @@ module ActiveRecord
       end
     end
     
-    class PostgreSQLAdapter < AbstractAdapter
+    class PostgreSQLAdapter #:nodoc:
       def quote_with_postgresql_arrays(value, column = nil)
         if Array === value && column && "#{column.type}" =~ /^(.+)_array$/
           quote_array_by_base_type(value, $1, column)
@@ -134,14 +136,55 @@ module ActiveRecord
       def quote_array_by_base_type(value, base_type, column = nil)
         case base_type.to_sym
         when :integer, :float, :decimal, :boolean, :date, :safe,
-             :string, :text, :other
+          :string, :text, :other, :datetime, :timestamp, :time
           quote_array_for_arel_by_base_type( value, base_type )
         else
-          quote_pg_string_array(value, base_type, column)
+          "E'#{ prepare_pg_string_array(value, base_type, column) }'"
+        end
+      end
+
+      def quote_array_for_arel_by_base_type( value, base_type )
+        case base_type.to_sym
+          when :integer, :float, :decimal, :boolean, :date, :safe, :datetime, :timestamp, :time
+            "'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
+          when :string, :text, :other
+            pa = prepare_array_for_arel_by_base_type(value, base_type)
+            "E'#{ quote_string( pa ) }'"
+          else
+            raise "Unsupported array base type #{base_type} for arel"
+        end
+      end
+    
+      def prepare_array_for_arel_by_base_type(value, base_type)
+        case base_type.to_sym
+          when :integer
+            prepare_pg_integer_array(value)
+          when :float
+            prepare_pg_float_array(value)
+          when :string, :text, :other
+            prepare_pg_text_array(value)
+          when :datetime, :timestamp, :time
+            prepare_pg_string_array(value, base_type)
+          when :decimal, :boolean, :date, :safe
+            prepare_pg_string_safe_array(value)
+          else
+            raise "Unsupported array base type #{base_type} for arel"
         end
       end
       
-      def quote_pg_string_array(value, base_type, column=nil)
+      def prepare_pg_integer_array(value)
+        "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_i}.join(',')}}"
+      end
+      
+      def prepare_pg_float_array(value)
+        "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_f}.join(',')}}"
+      end
+      
+      def prepare_pg_string_safe_array(value)
+        "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_s}.join(',')}}"
+      end
+      
+      def prepare_pg_string_array(value, base_type, column=nil)
         base_column= if column
                        column.base_column
                      else
@@ -152,68 +195,16 @@ module ActiveRecord
             if v=~/^E?'(.+)'$/ then v = $1 end
             "\"#{v.gsub('"','\"')}\""
         end
-        "'{#{ value.join(',')}}'"
+        "{#{ value.join(',')}}"
+      end
+      
+      def prepare_pg_text_array(value)
+        value = value.map{|v|
+             v ? v.to_s.gsub('\\','\\\\\\').gsub('"','\"') : 'NULL'
+          }.inspect
+        value.tr!('[]','{}')
       end
 
-      module Prepare
-        def quote_array_for_arel_by_base_type( value, base_type )
-          case base_type.to_sym
-            when :integer, :float, :decimal, :boolean, :date, :safe
-              "'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
-            when :string, :text, :other
-              pa = prepare_array_for_arel_by_base_type(value, base_type)
-              "E'#{ quote_string( pa ) }'"
-            else
-              raise "Unsupported array base type #{base_type} for arel 3"
-          end
-        end
-      
-        def prepare_array_for_arel_by_base_type(value, base_type)
-          case base_type.to_sym
-            when :integer
-              prepare_pg_integer_array(value)
-            when :float
-              prepare_pg_float_array(value)
-            when :string, :text, :other
-              prepare_pg_text_array(value)
-            when :decimal, :boolean, :date, :safe
-              prepare_pg_string_safe_array(value)
-            else
-              raise "Unsupported array base type #{base_type} for arel 3"
-          end
-        end
-      
-        def prepare_pg_integer_array(value)
-          "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_i}.join(',')}}"
-        end
-        
-        def prepare_pg_float_array(value)
-          "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_f}.join(',')}}"
-        end
-        
-        def prepare_pg_string_safe_array(value)
-          "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_s}.join(',')}}"
-        end
-      
-        def prepare_pg_text_array(value)
-          value = value.map{|v|
-               v ? v.to_s.gsub('\\','\\\\\\').gsub('"','\"') : 'NULL'
-            }.inspect
-          value.tr!('[]','{}')
-        end
-      end
-      include Prepare
-      
-      if defined? ::Arel
-          def prepare_for_arel( value, column )
-            return value unless value
-            if Array === value && "#{column.type}" =~ /^(.+)_array$/
-              prepare_array_for_arel_by_base_type(value, $1)
-            else
-              super
-            end
-          end
-      end
       
       NATIVE_DATABASE_TYPES.keys.each do |key|
         unless key==:primary_key
@@ -240,47 +231,6 @@ module ActiveRecord
       end
       
       alias_method_chain :type_to_sql, :postgresql_arrays
-    end
-  end
-end
-
-if defined? ::Arel
-  module ActiveRecord
-    module ConnectionAdapters
-      class AbstractAdapter
-        def prepare_for_arel( value, column )
-          if value && ((value.acts_like?(:date) || value.acts_like?(:time)) || value.is_a?(Hash) || value.is_a?(Array))
-            value.to_yaml
-          else
-            value
-          end
-        end
-      end
-    end
-    
-    class Base
-      private
-      # Returns a copy of the attributes hash where all the values have been safely quoted for use in
-      # an Arel insert/update method.
-      def arel_attributes_values(include_primary_key = true, include_readonly_attributes = true, attribute_names = @attributes.keys)
-        attrs = {}
-        attribute_names.each do |name|
-          if (column = column_for_attribute(name)) && (include_primary_key || !column.primary)
-
-            if include_readonly_attributes || (!include_readonly_attributes && !self.class.readonly_attributes.include?(name))
-              value = read_attribute(name)
-
-              if value && self.class.serialized_attributes.has_key?(name)
-                value = value.to_yaml
-              else
-                value = self.class.connection.prepare_for_arel(value, column)
-              end
-              attrs[self.class.arel_table[name]] = value
-            end
-          end
-        end
-        attrs
-      end    
     end
   end
 end
