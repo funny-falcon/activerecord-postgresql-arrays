@@ -20,3 +20,23 @@ Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include('README')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
+
+begin
+  require 'jeweler'
+  Jeweler::Tasks.new do |gemspec|
+    gemspec.name = "ar_pg_array"
+    gemspec.summary = "Use power of PostgreSQL Arrays in ActiveRecord"
+    gemspec.description = "ar_pg_array includes support of PostgreSQL's int[], float[], text[], timestamptz[] etc. into ActiveRecord. You could define migrations for array columns, query on array columns."
+    gemspec.email = "funny.falcon@gmail.com"
+    gemspec.homepage = "http://github.com/funny-falcon/activerecord-postgresql-arrays"
+    gemspec.authors = ["Sokolov Yura aka funny_falcon"]
+    gemspec.add_dependency('activerecord')
+    gemspec.rubyforge_project = 'ar_pg_array'
+  end
+  Jeweler::GemcutterTasks.new
+  Jeweler::RubyforgeTasks.new do |rubyforge|
+  end
+rescue LoadError
+  puts "Jeweler not available. Install it with: gem install jeweler"
+end
+
