@@ -1,13 +1,10 @@
-require 'pg_array_schema'
-require 'pg_array_querying'
-
 module PGArrays
   module ReferencesBy
   	class RelationHolder < Struct.new(:relation, :field, :klass)
   	  
   	  def referenced(obj)
   	  	ids = obj.read_attribute(field) || []
-  	  	klass.find( ids.sort ).sort_by{|o| ids.index(o.id)}
+ 	  	klass.find( ids.sort ).sort_by{|o| ids.index(o.id)}
   	  end
   	  
   	  def set_referenced(obj, value)

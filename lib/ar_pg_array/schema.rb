@@ -1,8 +1,3 @@
-# PostgresArrays
-require 'active_record'
-require 'active_record/base'
-require 'active_record/connection_adapters/postgresql_adapter'
-
 module ActiveRecord
   module ConnectionAdapters
     class PostgreSQLColumn < Column #:nodoc:
@@ -211,7 +206,7 @@ module ActiveRecord
       
       if defined? ::Arel
           def prepare_for_arel( value, column )
-            return unless value
+            return value unless value
             if Array === value && "#{column.type}" =~ /^(.+)_array$/
               prepare_array_for_arel_by_base_type(value, $1)
             else

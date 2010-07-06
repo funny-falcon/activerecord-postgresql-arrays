@@ -1,5 +1,3 @@
-require 'pg_array_schema'
-
 module ActiveRecord
   class Base
     class << self
@@ -121,18 +119,30 @@ if defined? Arel
   module Arel
     module Predicates
       class ArrayAny < Binary
+        def eval(row)
+          !(operand1.eval(row) & operand2.eval(row)).empty?
+        end
+      
         def predicate_sql
           "&&"
         end
       end
       
       class ArrayAll < Binary
+        def eval(row)
+          (operand2.eval(row) - operand1.eval(row)).empty?
+        end
+        
         def predicate_sql
           "@>"
         end
       end
       
-      class ArrayIncludes < Binary
+      class ArrayIncluded < Binary
+        def eval(row)
+          (operand1.eval(row) - operand2.eval(row)).empty?
+        end
+        
         def predicate_sql
           "<@"
         end
@@ -148,7 +158,7 @@ if defined? Arel
           Predicates::ArrayAll.new(self, other)
         end
         def ar_included(other)
-          Predicates::ArrayIncludes.new(self, other)
+          Predicates::ArrayIncluded.new(self, other)
         end
         
         def in(other)
