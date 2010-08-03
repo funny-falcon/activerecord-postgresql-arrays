@@ -1,7 +1,7 @@
 module ActiveRecord
   class Base
     class << self
-      if method_defined? :attribute_condition
+      if private_method_defined? :attribute_condition
         def attribute_condition_with_postgresql_arrays(quoted_column_name, argument)
           if ::PGArrays::PgArray === argument
             case argument
