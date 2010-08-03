@@ -31,10 +31,11 @@ begin
     gemspec.homepage = "http://github.com/funny-falcon/activerecord-postgresql-arrays"
     gemspec.authors = ["Sokolov Yura aka funny_falcon"]
     gemspec.add_dependency('activerecord')
-    gemspec.rubyforge_project = 'ar_pg_array'
+    gemspec.rubyforge_project = 'ar-pg-array'
   end
   Jeweler::GemcutterTasks.new
   Jeweler::RubyforgeTasks.new do |rubyforge|
+    
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: gem install jeweler"
