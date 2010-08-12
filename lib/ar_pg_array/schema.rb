@@ -219,6 +219,16 @@ module ActiveRecord
               column_names.each { |name| column(name, '#{key}_array', options) }#   column_names.each { |name| column(name, 'string_array', options) }
             end                                                                 # end
           EOV
+          Table.class_eval <<-EOV
+            def #{key}_array(*args)                                             # def string_array(*args)
+              options = args.extract_options!                                   #   options = args.extract_options!
+              column_names = args                                               #   column_names = args
+                                                                                #
+              column_names.each { |name|                                        #   column_names.each { |name|
+                @base.add_column(@table_name, name, '#{key}_array', options)    #     @base.add_column(@table_name, name, 'string_array', options) }
+              }                                                                 #   }
+            end                                                                 # end
+          EOV
         end
       end
       
