@@ -19,7 +19,7 @@ module ActiveRecord
     module ConnectionAdapters
       class AbstractAdapter
         def prepare_for_arel( value, column )
-          if value && ((value.acts_like?(:date) || value.acts_like?(:time)) || value.is_a?(Hash) || value.is_a?(Array))
+          if value && (value.is_a?(Hash) || value.is_a?(Array))
             value.to_yaml
           else
             value
@@ -40,7 +40,7 @@ module ActiveRecord
             if include_readonly_attributes || (!include_readonly_attributes && !self.class.readonly_attributes.include?(name))
               value = read_attribute(name)
   
-              if value && self.class.serialized_attributes.has_key?(name)
+              if value && self.class.serialized_attributes.has_key?(name) && (value.acts_like?(:date) || value.acts_like?(:time))
                 value = value.to_yaml
               else
                 value = self.class.connection.prepare_for_arel(value, column)
