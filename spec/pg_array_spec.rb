@@ -96,6 +96,10 @@ describe "PgArray" do
       map_times(bulk.times).should == map_times(parse_times(%w{2010-04-01 2010-03-01}))
     end
     
+    it "should allow to use sql" do
+      bulks_where(['ints && ?', [1,2].pg]).should == bulks_where(:id=>[1,2,3])
+    end
+    
     it "should allow to use finders" do
       bulks_where(:ints => [2].search_any).should == bulks_where(:id=>[2,3])
       bulks_where(:ints => [2,3].search_any).should == bulks_where(:id=>[2,3])

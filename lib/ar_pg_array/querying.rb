@@ -17,13 +17,23 @@ module ActiveRecord
         alias_method_chain :attribute_condition, :postgresql_arrays
       end
       
-      def quote_bound_value_with_postgresql_arrays(value)
-        if ::PGArrays::PgArray === value
-          connection.quote_array_by_base_type(value, value.base_type)
-        else
-          quote_bound_value_without_postgresql_arrays(value)
+      if instance_method(:quote_bound_value).arity == 1
+        def quote_bound_value_with_postgresql_arrays(value)
+          if ::PGArrays::PgArray === value
+            connection.quote_array_by_base_type(value, value.base_type)
+          else
+            quote_bound_value_without_postgresql_arrays(value)
+          end
         end
-      end                                              
+      else
+        def quote_bound_value_with_postgresql_arrays(value, c = connection)
+          if ::PGArrays::PgArray === value
+            c.quote_array_by_base_type(value, value.base_type)
+          else
+            quote_bound_value_without_postgresql_arrays(value, c)
+          end
+        end
+      end
       alias_method_chain :quote_bound_value, :postgresql_arrays
     end
   end

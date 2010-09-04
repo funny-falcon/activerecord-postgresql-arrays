@@ -32,7 +32,7 @@ module Arel
   end
   
   class Attribute
-    module Predications
+    methods = lambda do
       def ar_any(other)
         Predicates::ArrayAny.new(self, other)
       end
@@ -58,13 +58,19 @@ module Arel
         end
       end
     end
+    if defined? PREDICATES
+      PREDICATES.concat [:ar_any, :ar_all, :ar_included]
+      class_exec &methods
+    else
+      Predications.class_exec &methods
+    end
   end
 end
 
 module PGArrays
   class PgArray
     def to_sql( formatter = nil )
-      formatter.engine.quote_array_for_arel_by_base_type(self, base_type)
+      formatter.engine.connection.quote_array_for_arel_by_base_type(self, base_type)
     end
     
     def to_a
