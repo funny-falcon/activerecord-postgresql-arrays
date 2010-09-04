@@ -1,0 +1,15 @@
+one:
+  id: 1
+  name: one
+  created_at: <%= Date.today.to_s(:db) %>
+  updated_at: <%= Time.now.to_s(:db) %>
+two:
+  id: 2
+  name: two
+  created_at: <%= Date.today.to_s(:db) %>
+  updated_at: <%= Time.now.to_s(:db) %>
+three:
+  id: 3
+  name: three
+  created_at: <%= Date.today.to_s(:db) %>
+  updated_at: <%= Time.now.to_s(:db) %>

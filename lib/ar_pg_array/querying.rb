@@ -55,13 +55,13 @@ module PGArrays
     end
   
     class PgAll
-      def include?
+      def include?(v)
         Array === v && (self - v).empty?
       end
     end
 
     class PgIncludes < PgArray
-      def include?
+      def include?(v)
         Array === v && (v - self).empty?
       end
     end

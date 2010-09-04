@@ -216,7 +216,7 @@ module ActiveRecord
               options = args.extract_options!                                   #   options = args.extract_options!
               column_names = args                                               #   column_names = args
                                                                                 #
-              column_names.each { |name| column(name, '#{key}_array', options) }#   column_names.each { |name| column(name, 'string_array', options) }
+              column_names.each { |name| column(name, :'#{key}_array', options) }#   column_names.each { |name| column(name, 'string_array', options) }
             end                                                                 # end
           EOV
           Table.class_eval <<-EOV
@@ -225,7 +225,7 @@ module ActiveRecord
               column_names = args                                               #   column_names = args
                                                                                 #
               column_names.each { |name|                                        #   column_names.each { |name|
-                @base.add_column(@table_name, name, '#{key}_array', options)    #     @base.add_column(@table_name, name, 'string_array', options) }
+                @base.add_column(@table_name, name, :'#{key}_array', options)    #     @base.add_column(@table_name, name, 'string_array', options) }
               }                                                                 #   }
             end                                                                 # end
           EOV
@@ -234,7 +234,7 @@ module ActiveRecord
       
       def type_to_sql_with_postgresql_arrays(type, limit = nil, precision = nil, scale = nil)
         if type.to_s =~ /^(.+)_array$/
-          type_to_sql_without_postgresql_arrays($1, limit, precision, scale)+'[]'
+          type_to_sql_without_postgresql_arrays($1.to_sym, limit, precision, scale)+'[]'
         else
           type_to_sql_without_postgresql_arrays(type, limit, precision, scale)
         end

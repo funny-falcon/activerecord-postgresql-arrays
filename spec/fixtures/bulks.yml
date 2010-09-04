@@ -1,0 +1,28 @@
+first:
+  id: 1
+  ints: [ 1 ]
+  strings: [ one ]
+  times: [<%= Time.now.at_beginning_of_month.to_s(:db)%>, <%= Time.now.at_beginning_of_day.to_s(:db) %>]
+  floats: [1.0, 2.3]
+  decimals: [1.0, 2.3]
+second:
+  id: 2
+  ints: [ 2 ]
+  strings: [ two ]
+  times: [2010-01-01, 2010-02-01]
+  floats: [2.0, 2.3]
+  decimals: [2.0, 2.3]
+third:
+  id: 3
+  ints: [ 2, 3 ]
+  strings: [ two, three ]
+  times: [2010-03-01, 2010-04-01]
+  floats: [2.0, 2.5]
+  decimals: [2.0, 2.5]
+four:
+  id: 4
+  ints: [ ]
+  strings: [ ]
+  times: [ ]
+  floats: [ ]
+  decimals: [ ]
