@@ -178,6 +178,40 @@ describe "PgArray" do
     def should_not_be_able_except(items, act)
       (@all_items - items).each{|item| ab.should_not be_able_to(act, items)}
     end
+  end
+  
+  describe "references_by" do
+    it "should fetch tags in saved order" do
+      Item.find(3).tags.should == [Tag.find(1), Tag.find(3)]
+      Item.find(4).tags.should == [Tag.find(3), Tag.find(1)]
+    end
     
+    it "should save tags references" do
+      item = Item.find(3)
+      item.tags= [Tag.find(1), '3', 2]
+      item.tags.should == [Tag.find(1), Tag.find(3), Tag.find(2)]
+      item.save!
+      item.reload
+      item.tags.should == [Tag.find(1), Tag.find(3), Tag.find(2)]
+      item.tags= [1,3]
+      item.save!
+      item.reload
+      item.tags.should == [Tag.find(1), Tag.find(3)]
+    end
+    
+    it "should define named scopes for tags" do
+      Item.tags_include(3).order('id').all.should == items_where(:id=>[2,3,4,6])
+      Item.tags_include(1,3).order('id').all.should == items_where(:id=>[3,4,6])
+      Item.tags_have_all(3).order('id').all.should == items_where(:id=>[2,3,4,6])
+      Item.tags_have_all(1,3).order('id').all.should == items_where(:id=>[3,4,6])
+      Item.tags_have_any(3).order('id').all.should == items_where(:id=>[2,3,4,6])
+      Item.tags_have_any(1,3).order('id').all.should == items_where(:id=>[1,2,3,4,5,6])
+      Item.tags_included_into(3).order('id').all.should == items_where(:id=>[2,7])
+      Item.tags_included_into(1,3).order('id').all.should == items_where(:id=>[1,2,3,4,7])
+    end
+    
+    def items_where(cond)
+      Item.where(cond).order('id').all
+    end
   end
 end
