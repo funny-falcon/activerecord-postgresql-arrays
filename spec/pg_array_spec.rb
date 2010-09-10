@@ -230,5 +230,15 @@ describe "PgArray" do
         end
       end.should_not raise_error
     end
+    
+    it "should not break other add_column" do
+      lambda do
+        ActiveRecord::Schema.define do
+          add_column :items, :float1, :float
+          add_column :items, :float2, :float, :null=>true
+          add_column :items, :float3, :float, :default=>0, :null=>false
+        end
+      end.should_not raise_error
+    end
   end
 end
