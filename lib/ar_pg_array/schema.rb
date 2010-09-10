@@ -233,7 +233,7 @@ module ActiveRecord
       end
       
       def add_column_with_postgresql_arrays( table, column, type, options )
-        if type.to_s =~ /^(.+)_array$/ && options[:default].presence.is_a?(Array)
+        if type.to_s =~ /^(.+)_array$/ && options[:default].is_a?(Array)
           options = options.merge(:default => prepare_array_for_arel_by_base_type(options[:default], $1))
         end
         add_column_without_postgresql_arrays( table, column, type, options )

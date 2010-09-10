@@ -224,7 +224,7 @@ describe "PgArray" do
       lambda do
         ActiveRecord::Schema.define do
           change_table :items do |t|
-            t.integer_array :ints, :default=>[0], :null=>false
+            t.integer_array :ints, :default=>[], :null=>false
           end
           add_column :items, :floats, :float_array, :default=>[0], :null=>false
         end
