@@ -15,7 +15,7 @@ module PGArrays
     class RelationHolder < Struct.new(:relation, :field, :klass)
       
       def referenced(obj)
-        ids = obj[field] || []
+        ids = (obj[field] || []).map{|i| i.to_i}
         objs = klass.find_all_by_id( ids.sort )
         if ids.size < 20
           objs.sort_by{|o| ids.index(o.id)}
