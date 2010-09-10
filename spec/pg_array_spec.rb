@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/spec_helper.rb'
 
 describe "PgArray" do
-  describe "Array" do
+  context "Array" do
     before :all do
       @ability_class = Class.new do
         include CanCan::Ability
@@ -62,7 +62,7 @@ describe "PgArray" do
     end
   end
   
-  describe "AR" do
+  context "AR" do
     it "should adequatly insert fixtures" do
       bulk = Bulk.find(1)
       bulk.ints.should == [ 1 ]
@@ -127,7 +127,7 @@ describe "PgArray" do
     end
   end
   
-  describe "CanCan" do
+  context "CanCan" do
     before :all do
       @ability_class = Class.new do
         include CanCan::Ability
@@ -184,7 +184,7 @@ describe "PgArray" do
     end
   end
   
-  describe "references_by" do
+  context "references_by" do
     it "should fetch tags in saved order" do
       Item.find(3).tags.should == [Tag.find(1), Tag.find(3)]
       Item.find(4).tags.should == [Tag.find(3), Tag.find(1)]
