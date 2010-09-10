@@ -218,4 +218,17 @@ describe "PgArray" do
       Item.where(cond).order('id').all
     end
   end
+  
+  context "schema" do
+    it "should allow to add column" do
+      lambda do
+        ActiveRecord::Schema.define do
+          change_table :items do |t|
+            t.integer_array :ints, :default=>[0], :null=>false
+          end
+          add_column :items, :floats, :float_array, :default=>[0], :null=>false
+        end
+      end.should_not raise_error
+    end
+  end
 end

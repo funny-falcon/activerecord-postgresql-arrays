@@ -232,6 +232,14 @@ module ActiveRecord
         end
       end
       
+      def add_column_with_postgresql_arrays( table, column, type, options )
+        if type.to_s =~ /^(.+)_array$/ && options[:default].presence.is_a?(Array)
+          options = options.merge(:default => prepare_array_for_arel_by_base_type(options[:default], $1))
+        end
+        add_column_without_postgresql_arrays( table, column, type, options )
+      end
+      alias_method_chain :add_column, :postgresql_arrays
+      
       def type_to_sql_with_postgresql_arrays(type, limit = nil, precision = nil, scale = nil)
         if type.to_s =~ /^(.+)_array$/
           type_to_sql_without_postgresql_arrays($1.to_sym, limit, precision, scale)+'[]'
