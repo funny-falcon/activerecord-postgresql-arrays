@@ -200,8 +200,8 @@ module ActiveRecord
       
       def prepare_pg_text_array(value)
         value = value.map{|v|
-             v ? v.to_s.gsub('\\','\\\\\\').gsub('"','\"') : 'NULL'
-          }.inspect
+             v ? v.to_s.gsub('\\','\\\\\\').gsub('"','\"') : nil
+          }.inspect.gsub('nil','NULL')
         value.tr!('[]','{}')
       end
 

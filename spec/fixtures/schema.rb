@@ -17,5 +17,6 @@ ActiveRecord::Schema.define do
 	  t.timestamp_array :times,  :default => %w{2010-01-01 2010-02-01}
 	  t.float_array :floats,     :default => [1.0, 1.2]
 	  t.decimal_array :decimals, :default => [1.0, 1.2]
+    t.text_array :texts, :default => [nil, 'Text', 'NULL']
 	end
 end
