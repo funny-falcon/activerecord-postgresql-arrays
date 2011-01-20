@@ -12,7 +12,7 @@ describe "PgArray" do
     before :each do
       @ability = @ability_class.new
     end
-    
+
     it "should change type" do
       [].pg.should be_an_instance_of(PGArrays::PgArray)
       [].search_any.should be_an_instance_of(PGArrays::PgAny)
@@ -78,6 +78,7 @@ describe "PgArray" do
       bulk.strings.should == %w{as so}
       bulk.floats.should == [1.0, 1.2]
       bulk.decimals.should == [1.0, 1.2]
+      bulk.texts.should == [nil, 'Text', 'NULL', 'Text with nil', 'Text with , nil, !', 'nil']
       map_times(bulk.times).should == 
           map_times(parse_times(%w{2010-01-01 2010-02-01}))
     end
@@ -95,7 +96,7 @@ describe "PgArray" do
       bulk.decimals.should == [2.5, 2]
       map_times(bulk.times).should == map_times(parse_times(%w{2010-04-01 2010-03-01}))
     end
-    
+
     it "should allow to use sql" do
       bulks_where(['ints && ?', [1,2].pg]).should == bulks_where(:id=>[1,2,3])
     end
