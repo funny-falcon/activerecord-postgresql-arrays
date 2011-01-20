@@ -78,7 +78,7 @@ describe "PgArray" do
       bulk.strings.should == %w{as so}
       bulk.floats.should == [1.0, 1.2]
       bulk.decimals.should == [1.0, 1.2]
-      bulk.texts.should == [nil, 'Text', 'NULL']
+      bulk.texts.should == [nil, 'Text', 'NULL', 'Text with nil', 'Text with , nil, !', 'nil']
       map_times(bulk.times).should == 
           map_times(parse_times(%w{2010-01-01 2010-02-01}))
     end
