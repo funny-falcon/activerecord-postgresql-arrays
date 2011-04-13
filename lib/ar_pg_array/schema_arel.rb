@@ -65,25 +65,40 @@ module Arel
     end
   end
 
-  module Sql
+  if Arel::VERSION < '2.0'
+    module Sql
+      module Attributes
+        class << self
+          def for_with_postgresql_arrays(column)
+            if column.type.to_s =~ /^(.+)_array$/
+              ('Arel::Sql::Attributes::' + for_without_postgresql_arrays(column.base_column).name.split('::').last + 'Array').constantize
+            else
+              for_without_postgresql_arrays(column)
+            end
+          end
+          alias_method_chain :for, :postgresql_arrays
+        end
+        
+        %w{Integer Float Decimal Boolean String Time}.each do |basetype|
+          module_eval <<-"END"
+            class #{basetype}Array < Arel::Attributes::#{basetype}Array
+              include Attributes
+            end
+          END
+        end
+      end
+    end
+  else
     module Attributes
       class << self
         def for_with_postgresql_arrays(column)
           if column.type.to_s =~ /^(.+)_array$/
-            ('Arel::Sql::Attributes::' + for_without_postgresql_arrays(column.base_column).name.split('::').last + 'Array').constantize
+            ('Arel::Attributes::' + for_without_postgresql_arrays(column.base_column).name.split('::').last + 'Array').constantize
           else
             for_without_postgresql_arrays(column)
           end
         end
         alias_method_chain :for, :postgresql_arrays
-      end
-      
-      %w{Integer Float Decimal Boolean String Time}.each do |basetype|
-        module_eval <<-"END"
-          class #{basetype}Array < Arel::Attributes::#{basetype}Array
-            include Attributes
-          end
-        END
       end
     end
   end
