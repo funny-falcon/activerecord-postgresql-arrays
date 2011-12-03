@@ -97,6 +97,11 @@ describe "PgArray" do
       map_times(bulk.times).should == map_times(parse_times(%w{2010-04-01 2010-03-01}))
     end
 
+    it "should be safe for eval" do
+      bulk = Bulk.find(5)
+      bulk.strings.should == ['#{1+1}', '\\#{1+1}"\'', "\t\n"]
+    end
+
     it "should allow to use sql" do
       bulks_where(['ints && ?', [1,2].pg]).should == bulks_where(:id=>[1,2,3])
     end

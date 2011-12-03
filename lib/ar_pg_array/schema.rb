@@ -100,6 +100,7 @@ module ActiveRecord
       
       SARRAY_QUOTED = /^"(.*[^\\])?"$/m
       SARRAY_PARTIAL = /^".*(\\"|[^"])$/m
+      ESCAPE_ARRAY = Hash.new{|h,k| h[k] = eval("\"#{k}\"") }
       def self.string_to_text_array(value)
         return value unless value.is_a? String
         return nil if value.empty?
@@ -113,7 +114,7 @@ module ActiveRecord
             partial = true
           end
           if s =~ SARRAY_QUOTED
-            s = eval(s)
+            s = $1.gsub(/\\([a-z"\\]|\d{3})/){|s| ESCAPE_ARRAY[s]}
             partial = false
           elsif s == 'NULL'
             s = nil

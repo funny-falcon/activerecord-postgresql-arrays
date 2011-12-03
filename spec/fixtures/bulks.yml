@@ -19,10 +19,17 @@ third:
   times: [2010-03-01, 2010-04-01]
   floats: [2.0, 2.5]
   decimals: [2.0, 2.5]
-four:
+fourth:
   id: 4
   ints: [ ]
   strings: [ ]
+  times: [ ]
+  floats: [ ]
+  decimals: [ ]
+fifth:
+  id: 5
+  ints: [ 10 ]
+  strings: [ "#{1+1}", "\\#{1+1}\"'", "\t\n" ]
   times: [ ]
   floats: [ ]
   decimals: [ ]
