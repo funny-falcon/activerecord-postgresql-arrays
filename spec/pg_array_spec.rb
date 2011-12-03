@@ -99,7 +99,8 @@ describe "PgArray" do
 
     it "should be safe for eval" do
       bulk = Bulk.find(5)
-      bulk.strings.should == ['#{1+1}', '\\#{1+1}"\'', "\t\n"]
+      bulk.strings.should == ['#{1+1}', '\\#{1+1}"\'\\z', "\t\n"]
+      #$stderr.puts ActiveRecord::ConnectionAdapters::PostgreSQLColumn::ESCAPE_ARRAY.inspect
     end
 
     it "should allow to use sql" do
