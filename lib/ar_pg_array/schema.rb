@@ -139,17 +139,18 @@ module ActiveRecord
           :string, :text, :other, :datetime, :timestamp, :time
           quote_array_for_arel_by_base_type( value, base_type )
         else
-          "E'#{ prepare_pg_string_array(value, base_type, column) }'"
+          "'#{ prepare_pg_string_array(value, base_type, column) }'"
         end
       end
 
       def quote_array_for_arel_by_base_type( value, base_type )
         case base_type.to_sym
           when :integer, :float, :decimal, :boolean, :date, :safe, :datetime, :timestamp, :time
-            "E'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
+            "'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
           when :string, :text, :other
             pa = prepare_array_for_arel_by_base_type(value, base_type)
-            "E'#{ quote_string( pa ) }'"
+            "'#{ quote_string( pa ) }'"
+            #"'#{ pa.gsub("'","''") }'"
           else
             raise "Unsupported array base type #{base_type} for arel"
         end
@@ -163,6 +164,7 @@ module ActiveRecord
             prepare_pg_float_array(value)
           when :string, :text, :other
             prepare_pg_text_array(value)
+            #prepare_pg_string_array(value, base_type).gsub("''","'")
           when :datetime, :timestamp, :time
             prepare_pg_string_array(value, base_type)
           when :decimal, :boolean, :date, :safe
@@ -184,7 +186,7 @@ module ActiveRecord
         "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_s}.join(',')}}"
       end
       
-      ESCAPE_HASH={'\\'=>'\\\\\\\\', '"'=>'\\\\\\"'}
+      ESCAPE_HASH={'\\'=>'\\\\', '"'=>'\\"'}
       def prepare_pg_string_array(value, base_type, column=nil)
         base_column= if column
                        column.base_column
@@ -212,9 +214,9 @@ module ActiveRecord
       TESCAPE_HASH={'\\'=>'\\\\', '"'=>'\\"'}
       def prepare_pg_text_array(value)
         value = value.map{|v|
-             v ? v.to_s.gsub(/\\|"/){|s| TESCAPE_HASH[s]}: NULL
-        }.inspect
-        value.tr('[]','{}')
+             v ? "\"#{v.to_s.gsub(/\\|"/){|s| TESCAPE_HASH[s]}}\"" : NULL
+        }.join(',')
+        "{#{value}}"
       end
       
       NATIVE_DATABASE_TYPES.keys.each do |key|

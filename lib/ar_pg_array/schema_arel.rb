@@ -101,12 +101,5 @@ module Arel
         alias_method_chain :for, :postgresql_arrays
       end
     end
-    module Visitors
-      class PostgreSQL
-        def quote s, column = nil
-          "E#{super}"
-        end
-      end
-    end
   end
 end
