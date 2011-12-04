@@ -67,7 +67,8 @@ describe "PgArray" do
       bulk = Bulk.find(1)
       bulk.ints.should == [ 1 ]
       bulk.strings.should == %w{one}
-      bulk.times.should == [Time.now.at_beginning_of_month, Time.now.at_beginning_of_day]
+      map_times(bulk.times).should == 
+          map_times(parse_times(%w{2011-03-01 2011-05-05}))
       bulk.floats.should == [1.0, 2.3]
       bulk.decimals.should == [1.0, 2.3]
     end
@@ -78,7 +79,7 @@ describe "PgArray" do
       bulk.strings.should == %w{as so}
       bulk.floats.should == [1.0, 1.2]
       bulk.decimals.should == [1.0, 1.2]
-      bulk.texts.should == [nil, 'Text', 'NULL', 'Text with nil', 'Text with , nil, !', 'nil']
+      bulk.texts.should == [nil, 'Text', 'NULL', 'Text with nil', 'Text with , nil, !"\\', 'nil']
       map_times(bulk.times).should == 
           map_times(parse_times(%w{2010-01-01 2010-02-01}))
     end
@@ -96,10 +97,19 @@ describe "PgArray" do
       bulk.decimals.should == [2.5, 2]
       map_times(bulk.times).should == map_times(parse_times(%w{2010-04-01 2010-03-01}))
     end
+    
+    it "should save right text" do
+      bulk = Bulk.find(5)
+      bulk.texts = ['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\\\'\""]
+      bulk.save!
+      bulk.texts = []
+      bulk = Bulk.find(:first, :conditions=>'5 = id')
+      bulk.texts.should == ['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\\\'\""]
+    end
 
     it "should be safe for eval" do
       bulk = Bulk.find(5)
-      bulk.strings.should == ['#{1+1}', '\\#{1+1}"\'\\z', "\t\n"]
+      bulk.strings.should == ["\#{1+1}", "\\\#{1+1}\"'\\z\x01", "\t\n"]
       #$stderr.puts ActiveRecord::ConnectionAdapters::PostgreSQLColumn::ESCAPE_ARRAY.inspect
     end
 

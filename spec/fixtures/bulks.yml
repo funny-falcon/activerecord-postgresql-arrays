@@ -2,7 +2,7 @@ first:
   id: 1
   ints: [ 1 ]
   strings: [ one ]
-  times: [<%= Time.now.at_beginning_of_month.to_s(:db)%>, <%= Time.now.at_beginning_of_day.to_s(:db) %>]
+  times: [2011-03-01, 2011-05-05]
   floats: [1.0, 2.3]
   decimals: [1.0, 2.3]
 second:
@@ -29,7 +29,7 @@ fourth:
 fifth:
   id: 5
   ints: [ 10 ]
-  strings: [ "#{1+1}", "\\#{1+1}\"'\\z", "\t\n" ]
+  strings: [ "#{1+1}", "\\#{1+1}\"'\\z\x01", "\t\n" ]
   times: [ ]
   floats: [ ]
   decimals: [ ]

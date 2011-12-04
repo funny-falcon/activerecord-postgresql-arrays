@@ -2,7 +2,7 @@ module ActiveRecord
   module ConnectionAdapters
     class PostgreSQLColumn < Column #:nodoc:
       BASE_TYPE_COLUMNS = Hash.new{|h, base_type| 
-        base_column= new(nil, nil, base_type, true)
+        base_column= new(nil, nil, base_type.to_s, true)
         h[base_type] = h[base_column.type]= base_column
       }
       attr_reader :base_column
@@ -98,9 +98,8 @@ module ActiveRecord
         eval(string.tr('{}','[]'))
       end
       
-      SARRAY_QUOTED = /^"(.*[^\\])?"$/m
+      SARRAY_QUOTED = /^"((?:\\.|[^\\])*)"$/m
       SARRAY_PARTIAL = /^".*(\\"|[^"])$/m
-      ESCAPE_ARRAY = Hash.new{|h,k| h[k] = eval("\"#{k}\"") }
       def self.string_to_text_array(value)
         return value unless value.is_a? String
         return nil if value.empty?
@@ -114,7 +113,7 @@ module ActiveRecord
             partial = true
           end
           if s =~ SARRAY_QUOTED
-            s = $1.gsub(/\\([a-z"\\]|\d{3})/){|s| ESCAPE_ARRAY[s]}
+            s = $1.gsub(/\\(.)/,'\1')
             partial = false
           elsif s == 'NULL'
             s = nil
@@ -147,7 +146,7 @@ module ActiveRecord
       def quote_array_for_arel_by_base_type( value, base_type )
         case base_type.to_sym
           when :integer, :float, :decimal, :boolean, :date, :safe, :datetime, :timestamp, :time
-            "'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
+            "E'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
           when :string, :text, :other
             pa = prepare_array_for_arel_by_base_type(value, base_type)
             "E'#{ quote_string( pa ) }'"
@@ -185,6 +184,7 @@ module ActiveRecord
         "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_s}.join(',')}}"
       end
       
+      ESCAPE_HASH={'\\'=>'\\\\\\\\', '"'=>'\\\\\\"'}
       def prepare_pg_string_array(value, base_type, column=nil)
         base_column= if column
                        column.base_column
@@ -192,20 +192,30 @@ module ActiveRecord
                        PostgreSQLColumn::BASE_TYPE_COLUMNS[base_type.to_sym]
                      end
         value = value.map do|v| 
-            v = quote_without_postgresql_arrays(v, base_column)
-            if v=~/^E?'(.+)'$/ then v = $1 end
-            "\"#{v.gsub('"','\"')}\""
+            unless v.nil?
+              v = quote_without_postgresql_arrays(v, base_column)
+              if v=~/^'(.+)'$/m then
+                "\"#{$1.gsub(/\\|"/){|s| ESCAPE_HASH[s]}}\""
+              else
+                v
+              end
+            else
+              'NULL'
+            end
         end
         "{#{ value.join(',')}}"
       end
-      
+
+      class CNULL; def inspect; 'NULL'; end; alias to_s inspect end
+      NULL = CNULL.new
+
+      TESCAPE_HASH={'\\'=>'\\\\', '"'=>'\\"'}
       def prepare_pg_text_array(value)
         value = value.map{|v|
-             v ? v.to_s.gsub('\\','\\\\\\').gsub('"','\"') : '@!$%NULL%$!@'
-          }.inspect.gsub('"@!$%NULL%$!@"','NULL')
-        value.tr!('[]','{}')
+             v ? v.to_s.gsub(/\\|"/){|s| TESCAPE_HASH[s]}: NULL
+        }.inspect
+        value.tr('[]','{}')
       end
-
       
       NATIVE_DATABASE_TYPES.keys.each do |key|
         unless key==:primary_key
