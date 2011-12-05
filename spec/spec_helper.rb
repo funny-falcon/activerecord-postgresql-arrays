@@ -44,6 +44,7 @@ ActiveRecord::Base.silence do
   # load schema
   load File.join('spec/fixtures/schema.rb')
   # load fixtures
+  Fixtures = ActiveRecord::Fixtures  unless defined?(Fixtures)
   Fixtures.create_fixtures("spec/fixtures", ActiveRecord::Base.connection.tables)
 end
 
