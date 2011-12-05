@@ -150,7 +150,6 @@ module ActiveRecord
           when :string, :text, :other
             pa = prepare_array_for_arel_by_base_type(value, base_type)
             "'#{ quote_string( pa ) }'"
-            #"'#{ pa.gsub("'","''") }'"
           else
             raise "Unsupported array base type #{base_type} for arel"
         end
@@ -164,7 +163,6 @@ module ActiveRecord
             prepare_pg_float_array(value)
           when :string, :text, :other
             prepare_pg_text_array(value)
-            #prepare_pg_string_array(value, base_type).gsub("''","'")
           when :datetime, :timestamp, :time
             prepare_pg_string_array(value, base_type)
           when :decimal, :boolean, :date, :safe
