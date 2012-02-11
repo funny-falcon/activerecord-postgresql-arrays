@@ -38,4 +38,13 @@ Installation
 
     gem install ar_pg_array
 
+Changelog
+=========
+
+  0.9.13
+
+    Since version 0.9.13 ar_pg_array will try to detect arrays changed inplace.
+    And parsed arrays are now cached in @attributes_cache.
+    Thanks to Romain Beauxis (https://github.com/toots ) for being insistent about this.
+
 Copyright (c) 2010 Sokolov Yura aka funny_falcon, released under the MIT license

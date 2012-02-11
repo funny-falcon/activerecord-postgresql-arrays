@@ -132,11 +132,24 @@ describe "PgArray" do
     end
     
     it "should be cached in @attributes_cache" do
-      bulk = Bulk.find(5)
-      ar = bulk.texts
-      $stderr.puts bulk.instance_variable_get('@attributes_cache').inspect
-      $stderr.puts bulk.class.cached_attributes.inspect
-      bulk.instance_variable_get('@attributes_cache')['texts'].should.equal?(ar)
+      bulk = Bulk.find(1)
+      ar = bulk.ints
+      bulk.ints.should.equal?(ar)
+      ard = ar.dup
+      arn = (bulk.ints << 1)
+      arn.should.equal?(ar)
+      bulk.ints.should.equal?(ar)
+      bulk.ints.should == (ard + [1])
+    end
+
+    it 'should allways save changed value' do
+      bulk = Bulk.find(1)
+      old = bulk.ints.dup
+      bulk.ints << 2
+      new = bulk.ints.dup
+      bulk.save
+      bulk.reload
+      bulk.ints.should == new
     end
 
     def map_times(times)
