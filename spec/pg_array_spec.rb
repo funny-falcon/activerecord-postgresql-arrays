@@ -131,6 +131,14 @@ describe "PgArray" do
       bulks_where(:ints => [1,2].search_subarray).should == bulks_where(:id=>[1,2,4])
     end
     
+    it "should be cached in @attributes_cache" do
+      bulk = Bulk.find(5)
+      ar = bulk.texts
+      $stderr.puts bulk.instance_variable_get('@attributes_cache').inspect
+      $stderr.puts bulk.class.cached_attributes.inspect
+      bulk.instance_variable_get('@attributes_cache')['texts'].should.equal?(ar)
+    end
+
     def map_times(times)
       times.map{|t| t.strftime("%F %T")}
     end
