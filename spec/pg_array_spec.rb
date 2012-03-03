@@ -83,6 +83,13 @@ describe "PgArray" do
       map_times(bulk.times).should == 
           map_times(parse_times(%w{2010-01-01 2010-02-01}))
     end
+
+    it "should not alter defaults" do
+      bulk = Bulk.new
+      bulk.strings.push :foo
+      bulk = Bulk.new
+      bulk.strings.should == %w{as so}
+    end
     
     it "should save changes" do
       bulk = Bulk.find(3)
