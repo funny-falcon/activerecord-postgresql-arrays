@@ -60,6 +60,11 @@ module ActiveRecord
           else super
         end
       end
+
+      def default
+        res = super
+        Array === res ? res.dup : res
+      end
       
       def safe_string_to_array(string)
         return string unless string.is_a? String
