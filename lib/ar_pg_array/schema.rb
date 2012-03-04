@@ -99,7 +99,7 @@ module ActiveRecord
       end
       
       SARRAY_QUOTED = /^"((?:\\.|[^\\])*)"$/m
-      SARRAY_PARTIAL = /^".*(\\"|[^"])$/m
+      SARRAY_PARTIAL = /^"((?:\\.|[^\\])*[^"])?$/m
       def self.string_to_text_array(value)
         return value unless value.is_a? String
         return nil if value.empty?
