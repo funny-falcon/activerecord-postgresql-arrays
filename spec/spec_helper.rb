@@ -38,6 +38,7 @@ ActiveRecord::Base.logger = Logger.new(STDOUT) #if $0 == 'irb'
 require 'tag'
 require 'item'
 require 'bulk'
+require 'unrelated'
 ActiveRecord::Base.silence do
   ActiveRecord::Migration.verbose = false
 

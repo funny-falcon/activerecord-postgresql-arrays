@@ -1,0 +1,3 @@
+item1:
+  id: 1
+  for_yaml: {"a": "b"}

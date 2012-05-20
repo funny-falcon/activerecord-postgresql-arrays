@@ -159,6 +159,31 @@ describe "PgArray" do
       bulk.ints.should == new
     end
 
+    it 'should not break yaml serialization on model with array' do
+      item = Item.find(1)
+      item.for_yaml = {:a => :b}
+      item.save.should be_true
+      copy = Item.find(1)
+      copy.for_yaml.should == {:a => :b}
+      copy.for_yaml = ['a', 'b']
+      copy.save.should be_true
+      copy = Item.find(1)
+      copy.for_yaml.should == ['a', 'b']
+    end
+
+    it 'should not break yaml serialization on unrelated model' do
+      item = Unrelated.find(1)
+      item.for_yaml.should == {'a' => 'b'}
+      item.for_yaml = {:a => :b}
+      item.save.should be_true
+      copy = Unrelated.find(1)
+      copy.for_yaml.should == {:a => :b}
+      copy.for_yaml = ['a', 'b']
+      copy.save.should be_true
+      copy = Unrelated.find(1)
+      copy.for_yaml.should == ['a', 'b']
+    end
+
     def map_times(times)
       times.map{|t| t.strftime("%F %T")}
     end
