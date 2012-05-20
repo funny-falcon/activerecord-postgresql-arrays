@@ -30,7 +30,7 @@ begin
     gemspec.email = "funny.falcon@gmail.com"
     gemspec.homepage = "http://github.com/funny-falcon/activerecord-postgresql-arrays"
     gemspec.authors = ["Sokolov Yura aka funny_falcon"]
-    gemspec.add_dependency('activerecord', '>= 2.3.5', '<3.1')
+    gemspec.add_dependency('activerecord', '>= 2.3.5', '<4.0')
     gemspec.rubyforge_project = 'ar-pg-array'
   end
   Jeweler::GemcutterTasks.new
