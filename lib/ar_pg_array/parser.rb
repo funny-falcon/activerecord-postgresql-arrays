@@ -5,6 +5,7 @@ module PgArrayParser
   SQUARE_BRACKETS = '[]'.freeze
   NULL = 'NULL'.freeze
   NIL = 'nil'.freeze
+  ESCAPE_HASH={'\\'.freeze=>'\\\\'.freeze, '"'.freeze=>'\\"'.freeze}
 
   def parse_numeric_pgarray(text)
     text = text.tr(CURLY_BRACKETS, SQUARE_BRACKETS)
@@ -94,5 +95,66 @@ module PgArrayParser
         text = rest
       end
     end
+  end
+
+  def prepare_pg_integer_array(value)
+    val = value.map{|v| v.nil? ? nil : v.to_i}.inspect
+    val.gsub!(NIL, NULL)
+    val.tr!(SQUARE_BRACKETS, CURLY_BRACKETS)
+    val
+  end
+
+  def prepare_pg_float_array(value)
+    val = value.map{|v| v.nil? ? nil : v.to_f}.inspect
+    val.gsub!(NIL, NULL)
+    val.tr!(SQUARE_BRACKETS, CURLY_BRACKETS)
+    val
+  end
+
+  def prepare_pg_safe_array(value)
+    value = value.map{|val|
+        case val
+        when Array
+          prepare_pg_safe_array(val)
+        when nil
+          NULL
+        else
+          val.to_s
+        end
+    }.join(',')
+    "{#{value}}"
+  end
+
+  def prepare_pg_text_array(value)
+    value = value.map{|val|
+      case val
+      when Array
+        prepare_pg_text_array(val)
+      when nil
+        NULL
+      else
+         "\"#{val.to_s.gsub(/\\|"/){|s| ESCAPE_HASH[s]}}\""
+      end
+    }.join(',')
+    "{#{value}}"
+  end
+
+  def prepare_pg_string_array(value, &block)
+    value = value.map{|val|
+      case val
+      when Array
+        prepare_pg_string_array(val, &block)
+      when nil
+        NULL
+      else
+        val = yield val
+        if val =~ /^'(.*)'$/m
+          "\"#{ $1.gsub(/\\|"/){|s| ESCAPE_HASH[s]} }\""
+        else
+          val
+        end
+      end
+    }.join(',')
+    "{#{value}}"
   end
 end
