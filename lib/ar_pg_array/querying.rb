@@ -1,37 +1,25 @@
 module ActiveRecord
   class Base
     class << self
-      if private_method_defined? :attribute_condition
-        def attribute_condition_with_postgresql_arrays(quoted_column_name, argument)
-          if ::PGArrays::PgArray === argument
-            case argument
-              when ::PGArrays::PgAny then      "#{quoted_column_name} && ?"
-              when ::PGArrays::PgAll then      "#{quoted_column_name} @> ?"
-              when ::PGArrays::PgIncludes then "#{quoted_column_name} <@ ?"
-              else "#{quoted_column_name} = ?"
-            end
-          else
-            attribute_condition_without_postgresql_arrays(quoted_column_name, argument)
+      def attribute_condition_with_postgresql_arrays(quoted_column_name, argument)
+        if ::PGArrays::PgArray === argument
+          case argument
+            when ::PGArrays::PgAny then      "#{quoted_column_name} && ?"
+            when ::PGArrays::PgAll then      "#{quoted_column_name} @> ?"
+            when ::PGArrays::PgIncludes then "#{quoted_column_name} <@ ?"
+            else "#{quoted_column_name} = ?"
           end
+        else
+          attribute_condition_without_postgresql_arrays(quoted_column_name, argument)
         end
-        alias_method_chain :attribute_condition, :postgresql_arrays
       end
+      alias_method_chain :attribute_condition, :postgresql_arrays
       
-      if instance_method(:quote_bound_value).arity == 1
-        def quote_bound_value_with_postgresql_arrays(value)
-          if ::PGArrays::PgArray === value
-            connection.quote_array_by_base_type(value, value.base_type)
-          else
-            quote_bound_value_without_postgresql_arrays(value)
-          end
-        end
-      else
-        def quote_bound_value_with_postgresql_arrays(value, c = connection)
-          if ::PGArrays::PgArray === value
-            c.quote_array_by_base_type(value, value.base_type)
-          else
-            quote_bound_value_without_postgresql_arrays(value, c)
-          end
+      def quote_bound_value_with_postgresql_arrays(value)
+        if ::PGArrays::PgArray === value
+          connection.quote_array_by_base_type(value, value.base_type)
+        else
+          quote_bound_value_without_postgresql_arrays(value)
         end
       end
       alias_method_chain :quote_bound_value, :postgresql_arrays
