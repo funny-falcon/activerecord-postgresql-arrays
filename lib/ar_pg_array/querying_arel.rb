@@ -1,120 +1,50 @@
-if Arel::VERSION >= '2.0'
-  module Arel
-    module Nodes
-      class ArrayAny < Arel::Nodes::Binary
-      end
-
-      class ArrayAll < Arel::Nodes::Binary
-      end
-
-      class ArrayIncluded < Arel::Nodes::Binary
-      end
+module Arel
+  module Nodes
+    class ArrayAny < Arel::Nodes::Binary
     end
 
-    module Predications
-      def ar_any other
-        Nodes::ArrayAny.new self, other
-      end
-
-      def ar_all other
-        Nodes::ArrayAll.new self, other
-      end
-
-      def ar_included other
-        Nodes::ArrayIncluded.new self, other
-      end
+    class ArrayAll < Arel::Nodes::Binary
     end
 
-    module Visitors
-      class PostgreSQL
-        def visit_Arel_Nodes_ArrayAny o
-          "#{visit o.left} && #{visit o.right}"
-        end
-
-        def visit_Arel_Nodes_ArrayAll o
-          "#{visit o.left} @> #{visit o.right}"
-        end
-
-        def visit_Arel_Nodes_ArrayIncluded o
-          "#{visit o.left} <@ #{visit o.right}"
-        end
-
-        def visit_PGArrays_PgArray o
-          @connection.quote_array_for_arel_by_base_type(o, o.base_type)
-        end
-
-        alias :visit_PGArrays_PgAny :visit_PGArrays_PgArray
-        alias :visit_PGArrays_PgAll :visit_PGArrays_PgArray
-        alias :visit_PGArrays_PgIncluded :visit_PGArrays_PgArray
-      end
-    end
-  end
-else
-  module Arel
-    module Predicates
-      class ArrayAny < Binary
-        def eval(row)
-          !(operand1.eval(row) & operand2.eval(row)).empty?
-        end
-      
-        def predicate_sql
-          "&&"
-        end
-      end
-      
-      class ArrayAll < Binary
-        def eval(row)
-          (operand2.eval(row) - operand1.eval(row)).empty?
-        end
-        
-        def predicate_sql
-          "@>"
-        end
-      end
-      
-      class ArrayIncluded < Binary
-        def eval(row)
-          (operand1.eval(row) - operand2.eval(row)).empty?
-        end
-        
-        def predicate_sql
-          "<@"
-        end
-      end
-    end
-    
-    class Attribute
-      methods = lambda do
-        def ar_any(other)
-          Predicates::ArrayAny.new(self, other)
-        end
-        
-        def ar_all(other)
-          Predicates::ArrayAll.new(self, other)
-        end
-        
-        def ar_included(other)
-          Predicates::ArrayIncluded.new(self, other)
-        end
-      end
-      if defined? PREDICATES
-        PREDICATES.concat [:ar_any, :ar_all, :ar_included]
-        class_exec &methods
-      else
-        Predications.class_exec &methods
-      end
+    class ArrayIncluded < Arel::Nodes::Binary
     end
   end
 
-  module PGArrays
-    class PgArray
-      def to_sql( formatter = nil )
-        formatter.engine.connection.quote_array_for_arel_by_base_type(self, base_type)
+  module Predications
+    def ar_any other
+      Nodes::ArrayAny.new self, other
+    end
+
+    def ar_all other
+      Nodes::ArrayAll.new self, other
+    end
+
+    def ar_included other
+      Nodes::ArrayIncluded.new self, other
+    end
+  end
+
+  module Visitors
+    class PostgreSQL
+      def visit_Arel_Nodes_ArrayAny o
+        "#{visit o.left} && #{visit o.right}"
       end
-      
-      def to_a
-        self
+
+      def visit_Arel_Nodes_ArrayAll o
+        "#{visit o.left} @> #{visit o.right}"
       end
+
+      def visit_Arel_Nodes_ArrayIncluded o
+        "#{visit o.left} <@ #{visit o.right}"
+      end
+
+      def visit_PGArrays_PgArray o
+        @connection.quote_array_for_arel_by_base_type(o, o.base_type)
+      end
+
+      alias :visit_PGArrays_PgAny :visit_PGArrays_PgArray
+      alias :visit_PGArrays_PgAll :visit_PGArrays_PgArray
+      alias :visit_PGArrays_PgIncluded :visit_PGArrays_PgArray
     end
   end
 end
@@ -203,7 +133,10 @@ else
                 x.is_a?(ActiveRecord::Base) ? x.id : x
               }
 
-              if values.include?(nil)
+              ranges, values = values.partition{|v| v.is_a?(Range) || v.is_a?(Arel::Relation)}
+              predicates = ranges.map{|range| attribute.in(range)}
+
+              predicates << if values.include?(nil)
                 values = values.compact
                 if values.empty?
                   attribute.eq nil
@@ -214,6 +147,7 @@ else
                 attribute.in(values)
               end
 
+              predicates.inject{|composite, predicate| composite.or(predicate)}
             when Range, Arel::Relation
               attribute.in(value)
             when ActiveRecord::Base
