@@ -39,7 +39,7 @@ module Arel
       end
 
       def visit_PGArrays_PgArray o
-        @connection.quote_array_for_arel_by_base_type(o, o.base_type)
+        @connection.quote_array_by_base_type(o, o.base_type)
       end
 
       alias :visit_PGArrays_PgAny :visit_PGArrays_PgArray
