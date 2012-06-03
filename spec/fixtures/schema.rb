@@ -23,5 +23,6 @@ ActiveRecord::Schema.define do
 
   create_table "unrelateds", :force => true do |t|
     t.text :for_yaml
+    t.text :for_custom_serialize
   end
 end
