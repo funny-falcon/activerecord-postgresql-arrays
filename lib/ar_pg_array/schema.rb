@@ -136,6 +136,7 @@ module ActiveRecord
     end
 
     class PostgreSQLAdapter #:nodoc:
+      include PgArrayParser
       def quote_with_postgresql_arrays(value, column = nil)
         if Array === value && column && "#{column.type}" =~ /^(.+)_array$/
           quote_array_by_base_type(value, $1, column)
@@ -168,51 +169,19 @@ module ActiveRecord
           when :datetime, :timestamp, :time
             prepare_pg_string_array(value, base_type)
           when :decimal, :boolean, :date, :safe
-            prepare_pg_string_safe_array(value)
+            prepare_pg_safe_array(value)
           else
             raise "Unsupported array base type #{base_type} for arel"
         end
       end
 
-      def prepare_pg_integer_array(value)
-        "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_i}.join(',')}}"
-      end
-
-      def prepare_pg_float_array(value)
-        "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_f}.join(',')}}"
-      end
-
-      def prepare_pg_string_safe_array(value)
-        "{#{ value.map{|v| v.nil? ? 'NULL' : v.to_s}.join(',')}}"
-      end
-
-      ESCAPE_HASH={'\\'=>'\\\\', '"'=>'\\"'}
       def prepare_pg_string_array(value, base_type, column=nil)
         base_column= if column
                        column.base_column
                      else
                        PostgreSQLColumn::BASE_TYPE_COLUMNS[base_type.to_sym]
                      end
-        value = value.map do|v| 
-            unless v.nil?
-              v = quote_without_postgresql_arrays(v, base_column)
-              if v=~/^'(.+)'$/m then
-                "\"#{$1.gsub(/\\|"/){|s| ESCAPE_HASH[s]}}\""
-              else
-                v
-              end
-            else
-              'NULL'
-            end
-        end
-        "{#{ value.join(',')}}"
-      end
-
-      def prepare_pg_text_array(value)
-        value = value.map{|v|
-             v ? "\"#{v.to_s.gsub(/\\|"/){|s| ESCAPE_HASH[s]}}\"" : 'NULL'
-        }.join(',')
-        "{#{value}}"
+        super(value){|v| quote_without_postgresql_arrays(v, base_column)}
       end
 
       NATIVE_DATABASE_TYPES.keys.each do |key|
