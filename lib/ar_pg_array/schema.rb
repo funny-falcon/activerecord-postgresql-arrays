@@ -147,23 +147,13 @@ module ActiveRecord
 
       def quote_array_by_base_type(value, base_type, column = nil)
         case base_type.to_sym
-        when :integer, :float, :decimal, :boolean, :date, :safe,
-          :string, :text, :other, :datetime, :timestamp, :time
-          quote_array_for_arel_by_base_type( value, base_type )
+        when :integer, :float, :decimal, :boolean, :date, :safe, :datetime, :timestamp, :time
+          "'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
+        when :string, :text, :other
+          pa = prepare_array_for_arel_by_base_type(value, base_type)
+          "'#{ quote_string( pa ) }'"
         else
           "'#{ prepare_pg_string_array(value, base_type, column) }'"
-        end
-      end
-
-      def quote_array_for_arel_by_base_type( value, base_type )
-        case base_type.to_sym
-          when :integer, :float, :decimal, :boolean, :date, :safe, :datetime, :timestamp, :time
-            "'#{ prepare_array_for_arel_by_base_type(value, base_type) }'"
-          when :string, :text, :other
-            pa = prepare_array_for_arel_by_base_type(value, base_type)
-            "'#{ quote_string( pa ) }'"
-          else
-            raise "Unsupported array base type #{base_type} for arel"
         end
       end
 
