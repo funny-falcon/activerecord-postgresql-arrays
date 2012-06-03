@@ -218,13 +218,9 @@ module ActiveRecord
         "{#{ value.join(',')}}"
       end
 
-      class CNULL; def inspect; 'NULL'; end; alias to_s inspect end
-      NULL = CNULL.new
-
-      TESCAPE_HASH={'\\'=>'\\\\', '"'=>'\\"'}
       def prepare_pg_text_array(value)
         value = value.map{|v|
-             v ? "\"#{v.to_s.gsub(/\\|"/){|s| TESCAPE_HASH[s]}}\"" : NULL
+             v ? "\"#{v.to_s.gsub(/\\|"/){|s| ESCAPE_HASH[s]}}\"" : 'NULL'
         }.join(',')
         "{#{value}}"
       end
