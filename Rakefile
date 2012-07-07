@@ -7,9 +7,9 @@ task :default => :test
 
 desc 'Test the postgres_arrays plugin.'
 Rake::TestTask.new(:test) do |t|
-  t.libs << 'lib'
-  t.pattern = 'test/**/*_test.rb'
-  t.verbose = true
+  Dir.chdir(File.dirname(__FILE__)) do
+    Process.wait2 spawn('rspec spec')
+  end
 end
 
 desc 'Generate documentation for the postgres_arrays plugin.'
