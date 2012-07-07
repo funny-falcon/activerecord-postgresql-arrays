@@ -227,6 +227,15 @@ module ActiveRecord
       end
 
       alias_method_chain :type_to_sql, :postgresql_arrays
+
+      def type_cast_with_postgresql_arrays(value, column)
+        if Array === value && column && "#{column.type}" =~ /^(.+)_array$/
+          prepare_array_for_arel_by_base_type(value, $1)
+        else
+          type_cast_without_postgresql_arrays(value, column)
+        end
+      end
+      alias_method_chain :type_cast, :postgresql_arrays
     end
   end
 end
