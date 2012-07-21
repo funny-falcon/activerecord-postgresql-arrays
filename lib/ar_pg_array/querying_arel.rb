@@ -76,6 +76,8 @@ if ActiveRecord::VERSION::STRING < '3.1'
               attribute.ar_all(value)
             when PGArrays::PgIncludes
               attribute.ar_included(value)
+            when PGArrays::PgArray
+              attribute.eq(value)
             when Array, ActiveRecord::Associations::AssociationCollection, ActiveRecord::Relation
               values = value.to_a.map { |x|
                 x.is_a?(ActiveRecord::Base) ? x.id : x
@@ -125,6 +127,8 @@ else
               attribute.ar_all(value)
             when PGArrays::PgIncludes
               attribute.ar_included(value)
+            when PGArrays::PgArray
+              attribute.eq(value)
             when ActiveRecord::Relation
               value = value.select(value.klass.arel_table[value.klass.primary_key]) if value.select_values.empty?
               attribute.in(value.arel.ast)
