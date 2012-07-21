@@ -2,8 +2,8 @@ require 'rake'
 require 'rake/testtask'
 require 'rake/rdoctask'
 
-desc 'Default: run unit tests.'
-task :default => :test
+#desc 'Default: run unit tests.'
+#task :default => :test
 
 desc 'Test the postgres_arrays plugin.'
 Rake::TestTask.new(:test) do |t|
