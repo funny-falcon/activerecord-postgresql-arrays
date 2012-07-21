@@ -20,6 +20,7 @@ ActiveRecord::Schema.define do
     t.float_array :floats,     :default => [1.0, 1.2]
     t.decimal_array :decimals, :default => [1.0, 1.2]
     t.text_array :texts, :default => [nil, 'Text', 'NULL', 'Text with nil', 'Text with , nil, !"\\', 'nil']
+    t.integer_array :empty_def, :default => []
   end
 
   create_table "unrelateds", :force => true do |t|
