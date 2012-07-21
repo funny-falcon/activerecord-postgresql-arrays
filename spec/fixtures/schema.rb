@@ -12,6 +12,7 @@ ActiveRecord::Schema.define do
   end
 
   create_table "bulks", :force => true do |t|
+    t.string :type, :default => "Bulk"
     t.string :value, :default => "'"
     t.integer_array :ints,  :default => [1, 2]
     t.string_array :strings, :default => %w{as so}

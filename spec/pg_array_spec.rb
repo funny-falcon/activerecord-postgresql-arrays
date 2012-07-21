@@ -72,7 +72,7 @@ describe "PgArray" do
       bulk.floats.should == [1.0, 2.3]
       bulk.decimals.should == [1.0, 2.3]
     end
-    
+
     it "should be created with defaults" do
       bulk = Bulk.new
       bulk.ints.should == [1, 2]
@@ -82,6 +82,12 @@ describe "PgArray" do
       bulk.texts.should == [nil, 'Text', 'NULL', 'Text with nil', 'Text with , nil, !"\\', 'nil']
       map_times(bulk.times).should == 
           map_times(parse_times(%w{2010-01-01 2010-02-01}))
+    end
+
+    it "should be able to insert" do
+      bulk = Bulk.new
+      bulk.save
+      bulk.destroy
     end
 
     it "should not alter defaults" do
@@ -190,6 +196,19 @@ describe "PgArray" do
       model.for_custom_serialize.to_yaml.should == obj.to_yaml
       model2 = Unrelated.find(model.id)
       model2.for_custom_serialize.to_yaml.should == obj.to_yaml
+    end
+
+    it 'should be workable with sti' do
+      obj = Bulk1.where(:ints => [10].pg).first
+      obj.should be_instance_of Bulk1
+      obj.floats = [1.1, 2.2]
+      obj.save
+      obj1 = Bulk.find(obj.id)
+      obj1.should be_instance_of Bulk1
+      obj1.floats.should == [1.1, 2.2]
+      obj2 = Bulk1.new
+      obj2.save
+      obj2.destroy
     end
 
     def map_times(times)

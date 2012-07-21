@@ -28,6 +28,7 @@ fourth:
   decimals: [ ]
 fifth:
   id: 5
+  type: "Bulk1"
   ints: [ 10 ]
   strings: [ "#{1+1}", "\\#{1+1}\"'\\z\x01", "\t\n" ]
   times: [ ]
