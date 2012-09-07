@@ -189,8 +189,8 @@ describe "PgArray" do
       bulk.ints.should.equal?(ar)
       ard = ar.dup
       arn = (bulk.ints << 1)
-      arn.should.equal?(ar)
-      bulk.ints.should.equal?(ar)
+      arn.should equal(ar)
+      bulk.ints.should equal(ar)
       bulk.ints.should == (ard + [1])
     end
 
