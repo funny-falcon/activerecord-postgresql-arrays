@@ -69,7 +69,7 @@ module PgArrayParser
         values << ar
         if rest =~ /^\}\s*/
           return values, $'
-        elsif rest =~ /^,\s*{\s*/
+        elsif rest =~ /^,\s*\{\s*/
           rest = $'
         else
           raise "Mailformed postgres array"
@@ -97,15 +97,28 @@ module PgArrayParser
     end
   end
 
+  def _remap_array(array, &block)
+    array.map{|v|
+      case v
+      when Array
+        _remap_array(v, &block)
+      when nil
+        nil
+      else
+        yield v
+      end
+    }
+  end
+
   def prepare_pg_integer_array(value)
-    val = value.map{|v| v.nil? ? nil : v.to_i}.inspect
+    val = _remap_array(value){|v| v.to_i}.inspect
     val.gsub!(NIL, NULL)
     val.tr!(SQUARE_BRACKETS, CURLY_BRACKETS)
     val
   end
 
   def prepare_pg_float_array(value)
-    val = value.map{|v| v.nil? ? nil : v.to_f}.inspect
+    val = _remap_array(value){|v| v.to_f}.inspect
     val.gsub!(NIL, NULL)
     val.tr!(SQUARE_BRACKETS, CURLY_BRACKETS)
     val
@@ -139,11 +152,11 @@ module PgArrayParser
     "{#{value}}"
   end
 
-  def prepare_pg_string_array(value, &block)
+  def _prepare_pg_string_array(value, &block)
     value = value.map{|val|
       case val
       when Array
-        prepare_pg_string_array(val, &block)
+        _prepare_pg_string_array(val, &block)
       when nil
         NULL
       else
@@ -157,4 +170,5 @@ module PgArrayParser
     }.join(',')
     "{#{value}}"
   end
+  alias prepare_pg_string_array _prepare_pg_string_array
 end
