@@ -181,7 +181,7 @@ module ActiveRecord
                      else
                        PostgreSQLColumn::BASE_TYPE_COLUMNS[base_type.to_sym]
                      end
-        super(value){|v| quote_without_postgresql_arrays(v, base_column)}
+        _prepare_pg_string_array(value){|v| quote_without_postgresql_arrays(v, base_column)}
       end
 
       NATIVE_DATABASE_TYPES.keys.each do |key|

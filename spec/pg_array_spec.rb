@@ -123,11 +123,40 @@ describe "PgArray" do
     
     it "should save right text" do
       bulk = Bulk.find(5)
-      bulk.texts = ['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\\\'\""]
+      bulk.texts = ['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\n\\\'\""]
       bulk.save!
       bulk.texts = []
       bulk = Bulk.find(:first, :conditions=>'5 = id')
-      bulk.texts.should == ['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\\\'\""]
+      bulk.texts.should == ['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\n\\\'\""]
+    end
+
+    it "should save nested arrays" do
+      Bulk.transaction do
+        bulk = Bulk.find(3)
+        bulk.ints = [[1,2],[3,4]]
+        bulk.floats = [[1.0, 2.3e34],[3.43,6.21]]
+        bulk.times = [parse_times(%w{2010-04-01 2011-04-01}), parse_times(%w{2011-05-01 2010-05-01})]
+        bulk.save!
+        bulk = Bulk.find(:first, :conditions=>'3 = id')
+        bulk.ints.should == [[1,2],[3,4]]
+        bulk.floats.should == [[1.0, 2.3e34],[3.43,6.21]]
+        bulk.times.map{|ts| map_times(ts)}.should == [
+          map_times(parse_times(%w{2010-04-01 2011-04-01})),
+          map_times(parse_times(%w{2011-05-01 2010-05-01}))]
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    it "should save right nested text" do
+      Bulk.transaction do
+        bulk = Bulk.find(5)
+        bulk.texts = [['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\n\\\'\""], ['asdf', 'fdsa']]
+        bulk.save!
+        bulk.texts = []
+        bulk = Bulk.find(:first, :conditions=>'5 = id')
+        bulk.texts.should == [['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\n\\\'\""], ['asdf', 'fdsa']]
+        raise ActiveRecord::Rollback
+      end
     end
 
     it "should be safe for eval" do
