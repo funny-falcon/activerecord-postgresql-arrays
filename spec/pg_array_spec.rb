@@ -120,7 +120,23 @@ describe "PgArray" do
       bulk.decimals.should == [2.5, 2]
       map_times(bulk.times).should == map_times(parse_times(%w{2010-04-01 2010-03-01}))
     end
-    
+   
+    it "should save concatenate changes" do
+      bulk = Bulk.find(3)
+      bulk.ints << 1
+      bulk.strings << "one"
+      bulk.floats << 1.5
+      bulk.decimals << 1.5
+      bulk.times << DateTime.parse("2010-02-01")
+      bulk.save!
+      bulk = Bulk.find(:first, :conditions=>'3 = id')
+      bulk.ints.should == [3, 2, 1]
+      bulk.strings.should == %w{three two one}
+      bulk.floats.should == [2.5, 2, 1.5]
+      bulk.decimals.should == [2.5, 2, 1.5]
+      map_times(bulk.times).should == map_times(parse_times(%w{2010-04-01 2010-03-01 2010-02-01}))
+    end
+
     it "should save right text" do
       bulk = Bulk.find(5)
       bulk.texts = ['Text with , nil, !\x01\\\'"',"Text with , nil, !\x01\n\\\'\""]
